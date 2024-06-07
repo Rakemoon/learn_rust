@@ -1,12 +1,59 @@
 use rand::{thread_rng, prelude::SliceRandom};
 use serde::Deserialize;
 use crate::util::escape_html;
+use crate::constanst;
+
+pub enum TriviaGameCategory {
+    AnyCategory = 0,
+    GeneralKnowledge = 9,
+    EntertainmentBooks = 10,
+    EntertainmentFilm = 11,
+    EntertainmentMusic = 12,
+    EntertainmentMusicalAndTheatre = 13,
+    EntertainmentTelevision = 14,
+    EntertainmentVideoGames = 15,
+    EntertainmentBoardGames = 16,
+}
+
+impl TriviaGameCategory {
+    pub fn get_str<'a>() -> [&'a str; 9] {
+        [
+            "Any Category",
+            "General Knowledge",
+            "Entertainment Books",
+            "Entertainment Film",
+            "Entertainment Music",
+            "Entertainment Musical And Theatre",
+            "Entertainment Television",
+            "Entertainment Video Games",
+            "Entertainment Board Games",
+        ]
+    }
+
+    pub fn select_by_str(index: &str) -> u8 {
+        let category = TriviaGameCategory::get_str();
+        let index = category.iter().position(|&x| x == index);
+        if let Some(index) = index {
+            match index {
+                0 => 0,
+                _ => (index + 7) as u8,
+            }
+        } else {
+            panic!("wow youve entered wrong category");
+        }
+    }
+
+    pub fn select_by_enum(index: TriviaGameCategory) -> u8 {
+        index as u8
+    }
+}
 
 pub struct TriviaGameOptions {
     pub number_of_questions: u8,
     pub category: u8,
     pub difficulty: &'static str,
     pub r#type: &'static str,
+    pub http_client: reqwest::Client,
 }
 
 pub struct TriviaGame {
@@ -16,8 +63,6 @@ pub struct TriviaGame {
     option: TriviaGameOptions,
 }
 
-
-#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 struct OpenTDBResponse {
     response_code: u16,
@@ -46,10 +91,13 @@ impl TriviaGame {
     }
 
     pub async fn start(&mut self) -> Result<(), reqwest::Error> {
-        loop {
-            let result = self.retrieve_questions().await?;
+        let mut result = 1;
+        for _i in 0..5 {
+            result = self.retrieve_questions().await?;
             if result == 0 { break; }
         }
+
+        if result != 0 { panic!("Failed to retrieve_questions in 5 attempt")}
         Ok(())
     }
 
@@ -91,13 +139,15 @@ impl TriviaGame {
     }
 
     async fn retrieve_questions(&mut self) -> Result<u16, reqwest::Error> {
-        let mut url = String::from("https://opentdb.com/api.php?");
-        url.push_str(&format!("amount={}", self.option.number_of_questions));
-        //url.push_str(&format!("&category={}", self.option.category));
-        //url.push_str(&format!("&difficulty={}", self.option.difficulty));
-        //url.push_str(&format!("&type={}", self.option.r#type));
+        let mut query = Vec::<(&str, String)>::new();
+        query.push(("amount", self.option.number_of_questions.to_string()));
 
-        let body = reqwest::get(url)
+        if self.option.category != 0 { query.push(("category", self.option.category.to_string())) }
+
+        let body = self.option.http_client
+            .get(constanst::api_url::OPEN_TDB)
+            .query(&query)
+            .send()
             .await?
             .json::<OpenTDBResponse>()
             .await?;

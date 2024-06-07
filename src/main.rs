@@ -1,5 +1,5 @@
 use std::{error::Error, io};
-use learn_rust::game::trivia::{TriviaGameOptions, TriviaGame};
+use learn_rust::game::trivia::{TriviaGame, TriviaGameCategory, TriviaGameOptions};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -7,7 +7,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         number_of_questions: 2,
         r#type: "any",
         difficulty: "easy",
-        category: 0,
+        category: TriviaGameCategory::select_by_enum(TriviaGameCategory::EntertainmentVideoGames),
+        http_client: reqwest::Client::new(),
     };
 
     let mut trivia = TriviaGame::new(option);
