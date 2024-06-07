@@ -1,12 +1,12 @@
 use std::{error::Error, io};
-use learn_rust::game::trivia::{TriviaGame, TriviaGameCategory, TriviaGameOptions};
+use learn_rust::game::trivia::{TriviaGame, TriviaGameCategory, TriviaGameDifficulty, TriviaGameOptions, TriviaGameType};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let option = TriviaGameOptions {
-        number_of_questions: 2,
-        r#type: "any",
-        difficulty: "easy",
+        number_of_questions: 5,
+        r#type: TriviaGameType::select_by_enum(TriviaGameType::Boolean),
+        difficulty: TriviaGameDifficulty::select_by_enum(TriviaGameDifficulty::Easy),
         category: TriviaGameCategory::select_by_enum(TriviaGameCategory::EntertainmentVideoGames),
         http_client: reqwest::Client::new(),
     };
@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let limiter = String::from("=").repeat(question.len());
 
         println!("{limiter}");
-        println!("{}", question);
+        println!("{}\n\nDifficulty: {}\nCategory: {}", question, trivia.get_difficulty(), trivia.get_category());
         println!("{limiter}");
         for i in 0..selection.len() {
             let s = &selection[i];

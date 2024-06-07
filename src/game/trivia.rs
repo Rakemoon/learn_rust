@@ -3,6 +3,19 @@ use serde::Deserialize;
 use crate::util::escape_html;
 use crate::constanst;
 
+pub enum TriviaGameType {
+    AnyType,
+    Boolean,
+    Multiple,
+}
+
+pub enum TriviaGameDifficulty {
+    Any,
+    Easy,
+    Hard,
+    Medium
+}
+
 pub enum TriviaGameCategory {
     AnyCategory = 0,
     GeneralKnowledge = 9,
@@ -45,6 +58,61 @@ impl TriviaGameCategory {
 
     pub fn select_by_enum(index: TriviaGameCategory) -> u8 {
         index as u8
+    }
+}
+
+impl TriviaGameType {
+    pub fn get_str<'a>() -> [&'a str; 3] {
+        [
+            "Any Type",
+            "Multiple Choice",
+            "True or False",
+        ]
+    }
+
+    pub fn select_by_str(index: &str) -> &'static str {
+        match index {
+            "Multiple Choice" => "multiple",
+            "True or False"=> "boolean",
+            _ => "any"
+        }
+    }
+
+    pub fn select_by_enum(index: TriviaGameType) -> &'static str {
+        match index {
+            TriviaGameType::Boolean => "boolean",
+            TriviaGameType::Multiple => "multiple",
+            TriviaGameType::AnyType => "any",
+        }
+    }
+}
+
+impl TriviaGameDifficulty {
+    pub fn get_str<'a>() -> [&'a str; 4] {
+        [
+            "Any Difficulty",
+            "Easy",
+            "Hard",
+            "Medium",
+        ]
+    }
+
+    pub fn select_by_str(index: &str) -> &'static str {
+        match index {
+            "Easy" => "easy",
+            "Hard" => "hard",
+            "Medium" => "medium",
+            _ => "any"
+        }
+    }
+
+    pub fn select_by_enum(index: TriviaGameDifficulty) -> &'static str {
+        match index {
+            TriviaGameDifficulty::Easy => "easy",
+            TriviaGameDifficulty::Medium => "medium",
+            TriviaGameDifficulty::Hard => "hard",
+            TriviaGameDifficulty::Any => "any"
+        }
     }
 }
 
@@ -105,6 +173,14 @@ impl TriviaGame {
         escape_html(&self.get_question_data().question)
     }
 
+    pub fn get_difficulty(&self) -> String {
+        escape_html(&self.get_question_data().difficulty)
+    }
+
+    pub fn get_category(&self) -> String {
+        escape_html(&self.get_question_data().category)
+    }
+
     pub fn get_selection(&self) -> Vec<String> {
         let mut selections = Vec::<String>::new();
         let question_data = self.get_question_data();
@@ -143,6 +219,8 @@ impl TriviaGame {
         query.push(("amount", self.option.number_of_questions.to_string()));
 
         if self.option.category != 0 { query.push(("category", self.option.category.to_string())) }
+        if self.option.r#type != "any" { query.push(("type", self.option.r#type.to_string()))}
+        if self.option.difficulty != "any" { query.push(("difficulty", self.option.difficulty.to_string()))}
 
         let body = self.option.http_client
             .get(constanst::api_url::OPEN_TDB)
